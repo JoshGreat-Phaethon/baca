@@ -3,68 +3,48 @@
 namespace App\Handler;
 
 use App\Repositories\UserRepo;
-use Illuminate\Support\Facades\Hash;
 use Exception;
-
+use Illuminate\Support\Facades\Hash;
 
 class UserHandler
 {
-    protected UserRepo $userRepo;
-
-    public function __construct(UserRepo $userRepo)
-    {
-        $this->userRepo = $userRepo;
-    }
+    public function __construct(protected UserRepo $userRepo) {}
 
     public function register(array $data)
     {
-        
-
         return $this->userRepo->createUser([
-         'name' => $data['name'], 
-         'email' =>$data['email'],
-         'password'=> Hash::make($data['password']),
-         
-
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
-
-        
-        
     }
 
-   
-
-    public function login($email,$password)
+    public function login(string $email, string $password): array
     {
         $user = $this->userRepo->getUserByEmail($email);
 
-        if(!$user || !Hash::check($password,$user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             throw new Exception('Email atau password salah');
-
         }
+
         $token = $user->createToken('Bearer-Token')->plainTextToken;
+
         return [
             'token' => $token,
-            'user' => $user
+            'user' => $user,
         ];
-
-    }    
+    }
 
     public function deleteAccount(int $userId)
     {
         $user = $this->userRepo->getUserById($userId);
 
-        if(!$user) {
+        if (! $user) {
             throw new Exception('user tidak ditemukan');
+        }
 
-            
-        }
-        if ($user->saldo > 0) {
-            throw new Exception('saldo harus 0');
-        }
+        $user->tokens()->delete();
 
         return $this->userRepo->deleteUser($userId);
     }
-} 
- 
-        
+}

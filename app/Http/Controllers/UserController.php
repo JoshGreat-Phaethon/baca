@@ -2,63 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Handler\UserHandler;
-use App\Models\User;
 use App\Helpers\ResponseHelper;
+use Exception;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    protected UserHandler $handler;
-
-    public function __construct(UserHandler $handler)
-    {
-        $this->handler = $handler;
-    }
+    public function __construct(protected UserHandler $handler) {}
 
     public function register(Request $request)
     {
-        $user = $this->handler->register($request->all());
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+        ]);
 
-        return ResponseHelper::success('Register berhasil', $user);
+        $user = $this->handler->register($data);
+
+        return ResponseHelper::success($user, 'Register berhasil', 201);
     }
-
 
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
-        $user = $this->handler->login(
-            $request->email,
-            $request->password
-        );
+        try {
+            $user = $this->handler->login($data['email'], $data['password']);
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 401);
+        }
 
-        return ResponseHelper::success('Login berhasil', $user);
+        return ResponseHelper::success($user, 'Login berhasil');
     }
+
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
-        return ResponseHelper::success('logout berhasil');
-    }
+        $request->user()->currentAccessToken()?->delete();
 
-   
+        return ResponseHelper::success(null, 'logout berhasil');
+    }
 
     public function deleteAccount(Request $request)
     {
-        $user = $request->user();
-        
-        $this->handler->deleteAccount($user->id);
+        $this->handler->deleteAccount($request->user()->user_id);
 
-        return ResponseHelper::success('akun berhasil dihapus');
+        return ResponseHelper::success(null, 'akun berhasil dihapus');
     }
-   
-    
-    
-
-
-    
 }
-

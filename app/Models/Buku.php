@@ -2,26 +2,24 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Buku extends Model
 {
-    protected $primaryKey = 'user_id';
+    use HasFactory;
     protected $fillable = [
+        'user_id',
         'name',
         'author',
         'tanggal_terbit',
         'category',
         'genre',
     ];
-    public function bukus()
-    {
-        return $this->hasMany(Buku::class,'user_id','user_id');
-    }
-    public function user()
-    {
-        return $this->belongsTo(User::class,'user_id','user_id');
-    }
 
-
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
 }
