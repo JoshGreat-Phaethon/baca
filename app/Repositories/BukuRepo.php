@@ -1,38 +1,61 @@
-<?php 
+<?php
+
 namespace App\Repositories;
-use App\Models\Buku;
+
 use App\Interfaces\BukuInterfaces;
+use App\Models\Buku;
 
 class BukuRepo implements BukuInterfaces
 {
-    public function getAllBukus()
+    public function getAllBukus(int $userId, ?string $query = null)
     {
-        return Buku::all();
+        return Buku::query()
+            ->where('user_id', $userId)
+            ->when($query, function ($builder, $query) {
+                $builder->where(function ($q) use ($query) {
+                    $q->where('name', 'like', "%{$query}%")
+                        ->orWhere('author', 'like', "%{$query}%")
+                        ->orWhere('category', 'like', "%{$query}%")
+                        ->orWhere('genre', 'like', "%{$query}%");
+                });
+            })
+            ->latest()
+            ->get();
     }
-    public function getBukuById($id)
+
+    public function getBukuById(int $userId, int $id)
     {
-        return Buku::find($id);
+        return Buku::where('user_id', $userId)->find($id);
     }
+
     public function createBuku(array $data)
     {
         return Buku::create($data);
     }
-    public function updateBuku($id, array $data)
+
+    public function updateBuku(int $userId, int $id, array $data)
     {
-        $buku = Buku::find($id);
-        if ($buku) {
-            $buku->update($data);
-            return $buku;
+        $buku = Buku::where('user_id', $userId)->find($id);
+
+        if (! $buku) {
+            return null;
         }
-        return null;
+
+        $buku->update($data);
+
+        return $buku;
     }
-    public function deleteBuku($id)
+
+    public function deleteBuku(int $userId, int $id)
     {
-        $buku = Buku::find($id);
-        if ($buku) {
-            $buku->delete();
-            return true;
+        $buku = Buku::where('user_id', $userId)->find($id);
+
+        if (! $buku) {
+            return false;
         }
-        return false;
+
+        $buku->delete();
+
+        return true;
     }
 }
